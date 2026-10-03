@@ -1,0 +1,47 @@
+services:
+  db:
+    image: postgres:16
+    environment:
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: push
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: on-failure
+
+  redis:
+    image: redis:7-alpine
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: on-failure
+
+  app:
+    image: push-notification-service:latest
+    environment:
+      PORT: "3351"
+      API_KEY: ${API_KEY}
+      DATABASE_URL: postgres://postgres:postgres@db:5432/push
+      REDIS_HOST: redis
+      REDIS_PORT: "6379"
+      FIREBASE_KEY_PATH: /run/secrets/firebase_key
+    secrets:
+      - firebase_key
+    ports:
+      - "3351:3351"
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: on-failure
+        delay: 3s
+      update_config:
+        order: start-first
+
+secrets:
+  firebase_key:
+    external: true
+
+volumes:
+  pgdata:
