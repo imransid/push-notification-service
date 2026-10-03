@@ -1,0 +1,60 @@
+<!doctype html>
+<html>
+<body>
+  <button id="go">Get token</button>
+  <pre id="out" style="white-space:pre-wrap;word-break:break-all"></pre>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-messaging-compat.js"></script>
+  <script>
+    firebase.initializeApp({
+      apiKey: 'AIzaSyB5Ea2gzYafEC9Wau7TnmMr3fkvZvQkeJ4',
+      authDomain: 'push-notification-servic-8c057.firebaseapp.com',
+      projectId: 'push-notification-servic-8c057',
+      messagingSenderId: '454037819216',
+      appId: '1:454037819216:web:9086af4d32f2a36239e655',
+    });
+    const messaging = firebase.messaging();
+    messaging.onMessage((m) => alert(m.notification.title + ': ' + m.notification.body));
+    document.getElementById('go').onclick = async () => {
+      const out = document.getElementById('out');
+      try {
+        if ((await Notification.requestPermission()) !== 'granted') {
+          out.textContent = 'Permission denied';
+          return;
+        }
+        const reg = await navigator.serviceWorker.register('firebase-messaging-sw.js');
+        await navigator.serviceWorker.ready;
+        out.textContent = await messaging.getToken({
+          vapidKey: 'BOK4Msy_ZiCGu-SdhpHwC5uTx9PKD3Wc8fnliFX3RC_w5zlLzcaAGRRDF7g6qmOeE8aGXOBgsiw87AprQyWhqF4',
+          serviceWorkerRegistration: reg,
+        });
+      } catch (e) {
+        out.textContent = 'ERROR: ' + e.message;
+      }
+    };
+  </script>
+</body>
+</html>
+
+
+<!-- // Import the functions you need from the SDKs you need
+import { initializeApp } from "firebase/app";
+import { getAnalytics } from "firebase/analytics";
+// TODO: Add SDKs for Firebase products that you want to use
+// https://firebase.google.com/docs/web/setup#available-libraries
+
+// Your web app's Firebase configuration
+// For Firebase JS SDK v7.20.0 and later, measurementId is optional
+const firebaseConfig = {
+  apiKey: "AIzaSyB5Ea2gzYafEC9Wau7TnmMr3fkvZvQkeJ4",
+  authDomain: "push-notification-servic-8c057.firebaseapp.com",
+  projectId: "push-notification-servic-8c057",
+  storageBucket: "push-notification-servic-8c057.firebasestorage.app",
+  messagingSenderId: "454037819216",
+  appId: "1:454037819216:web:9086af4d32f2a36239e655",
+  measurementId: "G-5ZL2GZL5ZZ"
+};
+
+// Initialize Firebase
+const app = initializeApp(firebaseConfig);
+const analytics = getAnalytics(app); -->
