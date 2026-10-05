@@ -1,6 +1,7 @@
 services:
   db:
     image: postgres:16
+    restart: unless-stopped
     environment:
       POSTGRES_PASSWORD: postgres
       POSTGRES_DB: push
@@ -12,27 +13,44 @@ services:
       retries: 10
 
   redis:
-    image: redis:7
-    ports:
-      - "6381:6379"
+    image: redis:7-alpine
+    restart: unless-stopped
+    volumes:
+      - redisdata:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 3s
+      retries: 10
 
   app:
     build: .
+    restart: unless-stopped
     depends_on:
       db:
         condition: service_healthy
       redis:
-        condition: service_started
+        condition: service_healthy
     env_file: .env
     environment:
       DATABASE_URL: postgres://postgres:postgres@db:5432/push
-      REDIS_HOST: redis
-      REDIS_PORT: 6379
       FIREBASE_KEY_PATH: /secrets/firebase-service-account.json
+      REDIS_HOST: redis
+      REDIS_PORT: "6379"
     volumes:
       - ./firebase-service-account.json:/secrets/firebase-service-account.json:ro
     ports:
-      - "3351:3351"
+      - "127.0.0.1:3351:3351"
+    networks:
+      default:
+      gostyle:
+        aliases:
+          - push-app
 
 volumes:
   pgdata:
+  redisdata:
+
+networks:
+  gostyle:
+    external: true
+    name: gostyle_gostyle-net
