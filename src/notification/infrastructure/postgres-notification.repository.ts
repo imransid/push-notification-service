@@ -29,10 +29,47 @@ export class PostgresNotificationRepository
         created_at TIMESTAMPTZ NOT NULL
       )
     `);
+
+    await this.pool.query(`
+      ALTER TABLE notifications
+        ADD COLUMN IF NOT EXISTS user_id TEXT,
+        ADD COLUMN IF NOT EXISTS event_id TEXT
+    `);
+    await this.pool.query(`
+      CREATE UNIQUE INDEX IF NOT EXISTS notifications_user_event_device_uq
+        ON notifications (user_id, event_id, device_token)
+        WHERE event_id IS NOT NULL
+    `);
   }
 
   async onModuleDestroy() {
     await this.pool.end();
+  }
+
+  async saveForUser(
+    n: Notification,
+    userId: string,
+    eventId: string,
+  ): Promise<boolean> {
+    const { rowCount } = await this.pool.query(
+      `INSERT INTO notifications
+         (id, device_token, title, body, data, status, failure_reason, created_at, user_id, event_id)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+       ON CONFLICT DO NOTHING`,
+      [
+        n.id,
+        n.token.value,
+        n.content.title,
+        n.content.body,
+        JSON.stringify(n.content.data),
+        n.status,
+        n.failureReason,
+        n.createdAt,
+        userId,
+        eventId,
+      ],
+    );
+    return (rowCount ?? 0) > 0;
   }
 
   async save(n: Notification): Promise<void> {
@@ -57,7 +94,12 @@ export class PostgresNotificationRepository
   }
 
   async findById(id: string): Promise<Notification | null> {
-    if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id)) return null;
+    if (
+      !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
+        id,
+      )
+    )
+      return null;
     const { rows } = await this.pool.query(
       'SELECT * FROM notifications WHERE id = $1',
       [id],

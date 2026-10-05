@@ -57,6 +57,21 @@ export class PostgresDeviceRepository implements OnModuleInit, OnModuleDestroy {
     );
   }
 
+  async findActiveTokens(userId: string): Promise<string[]> {
+    const { rows } = await this.pool.query(
+      `SELECT token FROM devices WHERE user_id = $1 AND status = 'active'`,
+      [userId],
+    );
+    return rows.map((r) => r.token as string);
+  }
+
+  async markInvalid(token: string): Promise<void> {
+    await this.pool.query(
+      `UPDATE devices SET status = 'invalid' WHERE token = $1`,
+      [token],
+    );
+  }
+
   async remove(token: string): Promise<boolean> {
     const { rowCount } = await this.pool.query(
       'DELETE FROM devices WHERE token = $1',

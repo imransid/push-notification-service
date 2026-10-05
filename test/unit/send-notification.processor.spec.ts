@@ -17,7 +17,13 @@ const setup = (sendImpl: () => Promise<void>) => {
   };
   const sender = { send: vi.fn(sendImpl) };
   const publisher = { mergeObjectContext: (o: any) => o } as any;
-  const processor = new SendNotificationProcessor(repo as any, sender as any, publisher);
+  const devices = { markInvalid: vi.fn() };
+  const processor = new SendNotificationProcessor(
+    repo as any,
+    sender as any,
+    publisher,
+    devices as any,
+  );
   return { processor, n, sender };
 };
 
@@ -55,14 +61,22 @@ describe('SendNotificationProcessor retries', () => {
   it('rethrows a temporary error and stays PENDING when tries are left', async () => {
     const { processor, n } = setup(temporary);
     await expect(
-      processor.process({ data: { id: n.id }, attemptsMade: 0, opts: { attempts: 3 } } as any),
+      processor.process({
+        data: { id: n.id },
+        attemptsMade: 0,
+        opts: { attempts: 3 },
+      } as any),
     ).rejects.toThrow('FCM busy');
     expect(n.status).toBe(NotificationStatus.PENDING);
   });
 
   it('marks FAILED on the last attempt', async () => {
     const { processor, n } = setup(temporary);
-    await processor.process({ data: { id: n.id }, attemptsMade: 2, opts: { attempts: 3 } } as any);
+    await processor.process({
+      data: { id: n.id },
+      attemptsMade: 2,
+      opts: { attempts: 3 },
+    } as any);
     expect(n.status).toBe(NotificationStatus.FAILED);
   });
 
@@ -70,7 +84,11 @@ describe('SendNotificationProcessor retries', () => {
     const { processor, n } = setup(async () => {
       throw new Error('invalid token');
     });
-    await processor.process({ data: { id: n.id }, attemptsMade: 0, opts: { attempts: 3 } } as any);
+    await processor.process({
+      data: { id: n.id },
+      attemptsMade: 0,
+      opts: { attempts: 3 },
+    } as any);
     expect(n.status).toBe(NotificationStatus.FAILED);
   });
 });

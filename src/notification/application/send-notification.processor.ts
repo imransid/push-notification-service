@@ -9,6 +9,12 @@ import {
 import { PUSH_SENDER, type PushSender } from '../domain/push-sender.port';
 import { NotificationStatus } from '../domain/notification-status.enum';
 import { TemporaryPushError } from '../domain/temporary-push.error';
+import { PostgresDeviceRepository } from '../infrastructure/postgres-device.repository';
+
+const DEAD_TOKEN_CODES = new Set([
+  'messaging/registration-token-not-registered',
+  'messaging/invalid-registration-token',
+]);
 
 @Processor('notifications')
 export class SendNotificationProcessor extends WorkerHost {
@@ -17,6 +23,7 @@ export class SendNotificationProcessor extends WorkerHost {
     private readonly repo: NotificationRepository,
     @Inject(PUSH_SENDER) private readonly sender: PushSender,
     private readonly publisher: EventPublisher,
+    private readonly devices: PostgresDeviceRepository,
   ) {
     super();
   }
@@ -38,6 +45,11 @@ export class SendNotificationProcessor extends WorkerHost {
       // Temporary error with tries left: throw, BullMQ retries later.
       // The notification stays PENDING.
       if (e instanceof TemporaryPushError && !isLastAttempt) throw e;
+
+      const code = (e as { code?: string }).code ?? '';
+      if (DEAD_TOKEN_CODES.has(code)) {
+        await this.devices.markInvalid(notification.token.value);
+      }
 
       notification.markFailed(e instanceof Error ? e.message : 'Unknown error');
     }

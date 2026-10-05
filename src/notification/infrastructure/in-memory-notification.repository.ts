@@ -13,4 +13,9 @@ export class InMemoryNotificationRepository implements NotificationRepository {
   async findById(id: string): Promise<Notification | null> {
     return this.store.get(id) ?? null;
   }
+
+  async saveForUser(n: Notification, _userId: string, _eventId: string) {
+    await this.save(n);
+    return true;
+  }
 }

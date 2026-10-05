@@ -16,6 +16,7 @@ import { BullModule } from '@nestjs/bullmq';
 import { SendNotificationProcessor } from './application/send-notification.processor';
 import { DeviceController } from './presentation/device.controller.js';
 import { PostgresDeviceRepository } from './infrastructure/postgres-device.repository.js';
+import { SendUserNotificationHandler } from './application/commands/send-user-notification.handler.js';
 
 @Module({
   imports: [
@@ -31,6 +32,7 @@ import { PostgresDeviceRepository } from './infrastructure/postgres-device.repos
   controllers: [NotificationController, DeviceController],
   providers: [
     SendNotificationHandler,
+    SendUserNotificationHandler,
     SendNotificationProcessor,
     GetNotificationHandler,
     NotificationSentHandler,

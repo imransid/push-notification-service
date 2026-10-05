@@ -31,6 +31,9 @@ import {
   SendNotificationResponseDto,
 } from './notification.responses';
 
+import { SendUserNotificationCommand } from '../application/commands/send-user-notification.command';
+import { SendUserNotificationDto } from './send-user-notification.dto';
+
 @ApiTags('notifications')
 @ApiSecurity('api-key')
 @ApiUnauthorizedResponse({
@@ -44,6 +47,23 @@ export class NotificationController {
     private readonly commandBus: CommandBus,
     private readonly queryBus: QueryBus,
   ) {}
+
+  @Post('user')
+  @ApiOperation({
+    summary: 'Send a push notification to all active devices of a user',
+  })
+  @HttpCode(202)
+  async sendToUser(@Body() dto: SendUserNotificationDto) {
+    return this.commandBus.execute(
+      new SendUserNotificationCommand(
+        dto.userId,
+        dto.eventId,
+        dto.title,
+        dto.body,
+        dto.data ?? {},
+      ),
+    );
+  }
 
   @Post()
   @ApiOperation({

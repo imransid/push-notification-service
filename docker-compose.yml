@@ -11,14 +11,23 @@ services:
       interval: 3s
       retries: 10
 
+  redis:
+    image: redis:7
+    ports:
+      - "6381:6379"
+
   app:
     build: .
     depends_on:
       db:
         condition: service_healthy
+      redis:
+        condition: service_started
     env_file: .env
     environment:
       DATABASE_URL: postgres://postgres:postgres@db:5432/push
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
       FIREBASE_KEY_PATH: /secrets/firebase-service-account.json
     volumes:
       - ./firebase-service-account.json:/secrets/firebase-service-account.json:ro
