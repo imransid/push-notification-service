@@ -6,12 +6,13 @@ import {
   Put,
   UseGuards,
 } from '@nestjs/common';
-import { ApiTags } from '@nestjs/swagger';
+import { ApiSecurity, ApiTags } from '@nestjs/swagger';
 import { ApiKeyGuard } from './api-key.guard';
 import { PostgresDeviceRepository } from '../infrastructure/postgres-device.repository';
 import { RegisterDeviceDto, UnregisterDeviceDto } from './device.dto';
 
 @ApiTags('devices')
+@ApiSecurity('api-key')
 @UseGuards(ApiKeyGuard)
 @Controller('devices')
 export class DeviceController {
