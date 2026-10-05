@@ -14,6 +14,8 @@ import { NotificationController } from './presentation/notification.controller.j
 
 import { BullModule } from '@nestjs/bullmq';
 import { SendNotificationProcessor } from './application/send-notification.processor';
+import { DeviceController } from './presentation/device.controller.js';
+import { PostgresDeviceRepository } from './infrastructure/postgres-device.repository.js';
 
 @Module({
   imports: [
@@ -26,12 +28,13 @@ import { SendNotificationProcessor } from './application/send-notification.proce
     }),
     BullModule.registerQueue({ name: 'notifications' }),
   ],
-  controllers: [NotificationController],
+  controllers: [NotificationController, DeviceController],
   providers: [
     SendNotificationHandler,
     SendNotificationProcessor,
     GetNotificationHandler,
     NotificationSentHandler,
+    PostgresDeviceRepository,
     NotificationFailedHandler,
     {
       provide: NOTIFICATION_REPOSITORY,
