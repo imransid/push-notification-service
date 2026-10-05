@@ -1,5 +1,6 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { IsObject, IsOptional, IsString, MinLength } from 'class-validator';
+import { IsStringRecord } from './is-string-record.validator';
 
 export class SendUserNotificationDto {
   @ApiProperty({ example: 'user-123' })
@@ -30,6 +31,6 @@ export class SendUserNotificationDto {
     example: { type: 'booking', bookingId: '123' },
   })
   @IsOptional()
-  @IsObject()
+  @IsStringRecord()
   data?: Record<string, string>;
 }
