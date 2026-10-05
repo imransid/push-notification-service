@@ -115,4 +115,21 @@ export class PostgresNotificationRepository
       createdAt: r.created_at,
     });
   }
+
+  async findPendingId(
+    userId: string,
+    eventId: string,
+    token: string,
+  ): Promise<string | null> {
+    const { rows } = await this.pool.query<{ id: string }>(
+      `SELECT id FROM notifications
+        WHERE user_id = $1
+          AND event_id = $2
+          AND device_token = $3
+          AND status = $4
+        LIMIT 1`,
+      [userId, eventId, token, NotificationStatus.PENDING],
+    );
+    return rows[0]?.id ?? null;
+  }
 }

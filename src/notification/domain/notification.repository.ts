@@ -10,4 +10,9 @@ export interface NotificationRepository {
     userId: string,
     eventId: string,
   ): Promise<boolean>;
+  findPendingId(
+    userId: string,
+    eventId: string,
+    token: string,
+  ): Promise<string | null>;
 }

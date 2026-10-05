@@ -18,4 +18,10 @@ export class InMemoryNotificationRepository implements NotificationRepository {
     await this.save(n);
     return true;
   }
+
+  async findPendingId(_userId: string, _eventId: string, _token: string) {
+    // This notebook never blocks duplicates (saveForUser always returns true),
+    // so there is never an old waiting order to send again.
+    return null;
+  }
 }

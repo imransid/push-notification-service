@@ -42,14 +42,21 @@ export class SendUserNotificationHandler implements ICommandHandler<
         cmd.userId,
         cmd.eventId,
       );
-      if (!inserted) continue; // same event for this device already exists
+
+      if (!inserted) {
+        // The order is already in the notebook. If it is still waiting,
+        // call the kitchen again. Same jobId, so it can never send twice.
+        const pendingId = await this.repo.findPendingId(
+          cmd.userId,
+          cmd.eventId,
+          token,
+        );
+        if (pendingId) await this.enqueue(pendingId);
+        continue;
+      }
 
       notification.commit();
-      await this.queue.add(
-        'send',
-        { id: notification.id },
-        { attempts: 3, backoff: { type: 'exponential', delay: 1000 } },
-      );
+      await this.enqueue(notification.id);
       queued++;
     }
 
@@ -58,5 +65,13 @@ export class SendUserNotificationHandler implements ICommandHandler<
       queued,
       duplicates: tokens.length - queued,
     };
+  }
+
+  private enqueue(id: string) {
+    return this.queue.add(
+      'send',
+      { id },
+      { jobId: id, attempts: 3, backoff: { type: 'exponential', delay: 1000 } },
+    );
   }
 }
