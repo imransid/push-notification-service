@@ -293,6 +293,12 @@ docker stack rm push
 docker secret rm firebase_key
 ```
 
+### Test
+
+```
+python3 -m http.server 5500 --directory web-test
+```
+
 ### Docker Compose
 
 `docker-compose.yml` starts the app and PostgreSQL. It does **not** include Redis yet, so the queue will not work until you add a `redis` service and set `REDIS_HOST=redis`. Use the Swarm stack or the local setup above for now.
