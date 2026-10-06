@@ -329,3 +329,9 @@ python3 -m http.server 5500 --directory web-test
 7. Register in the module
 8. Build bottom-up, run tsc after each step, then curl test
 ```
+
+### Daily cleanup
+
+`scripts/cleanup.sql` removes dead devices (status `invalid` or silent for 60 days)
+and notifications older than 90 days. On the server it runs from root's crontab
+at 22:15 UTC and appends its results to `/root/push-cleanup.log`.
