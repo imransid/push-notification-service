@@ -11,6 +11,10 @@ services:
       test: ["CMD-SHELL", "pg_isready -U postgres -d push"]
       interval: 3s
       retries: 10
+    networks:
+      default:
+        aliases:
+          - push-db
 
   redis:
     image: redis:7-alpine
@@ -21,6 +25,10 @@ services:
       test: ["CMD", "redis-cli", "ping"]
       interval: 3s
       retries: 10
+    networks:
+      default:
+        aliases:
+          - push-redis
 
   app:
     build: .
@@ -32,9 +40,11 @@ services:
         condition: service_healthy
     env_file: .env
     environment:
-      DATABASE_URL: postgres://postgres:postgres@db:5432/push
+      # push-db and push-redis, never the short names db and redis: this app
+      # also sits on gostyle-net, where other stacks have services called redis.
+      DATABASE_URL: postgres://postgres:postgres@push-db:5432/push
       FIREBASE_KEY_PATH: /secrets/firebase-service-account.json
-      REDIS_HOST: redis
+      REDIS_HOST: push-redis
       REDIS_PORT: "6379"
     volumes:
       - ./firebase-service-account.json:/secrets/firebase-service-account.json:ro
