@@ -3,7 +3,9 @@ services:
     image: postgres:16
     restart: unless-stopped
     environment:
-      POSTGRES_PASSWORD: postgres
+      # Only read when the volume is first created. On a running database the
+      # password is changed with ALTER USER, then set here (.env) to match.
+      POSTGRES_PASSWORD: ${PUSH_DB_PASSWORD:-postgres}
       POSTGRES_DB: push
     volumes:
       - pgdata:/var/lib/postgresql/data
@@ -13,6 +15,13 @@ services:
       retries: 10
     networks:
       default:
+        aliases:
+          - push-db
+      # customer-api's Django admin reads devices and notifications as
+      # admin_ro, SELECT only (scripts/admin_read_only_user.sql). Only
+      # this db and customer-api's api are on this network; never the app or
+      # redis.
+      admin-db:
         aliases:
           - push-db
 
@@ -42,7 +51,9 @@ services:
     environment:
       # push-db and push-redis, never the short names db and redis: this app
       # also sits on gostyle-net, where other stacks have services called redis.
-      DATABASE_URL: postgres://postgres:postgres@push-db:5432/push
+      # PUSH_DB_PASSWORD in .env: hex only (openssl rand -hex 24), it sits in
+      # a URL.
+      DATABASE_URL: postgres://postgres:${PUSH_DB_PASSWORD:-postgres}@push-db:5432/push
       FIREBASE_KEY_PATH: /secrets/firebase-service-account.json
       REDIS_HOST: push-redis
       REDIS_PORT: "6379"
@@ -64,3 +75,8 @@ networks:
   gostyle:
     external: true
     name: gostyle_gostyle-net
+  # Created once by hand, before `docker compose up`:
+  #   docker network create --driver overlay --attachable gostyle_admin-db
+  admin-db:
+    external: true
+    name: gostyle_admin-db
