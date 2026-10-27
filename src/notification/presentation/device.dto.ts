@@ -1,5 +1,5 @@
-import { ApiProperty } from '@nestjs/swagger';
-import { IsIn, IsString, MinLength } from 'class-validator';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { IsIn, IsOptional, IsString, IsUUID, MinLength } from 'class-validator';
 
 export class RegisterDeviceDto {
   @ApiProperty({ example: 'user-123' })
@@ -20,6 +20,15 @@ export class RegisterDeviceDto {
   @ApiProperty({ enum: ['android', 'ios'] })
   @IsIn(['android', 'ios'])
   platform: string;
+
+  @ApiPropertyOptional({
+    format: 'uuid',
+    description:
+      "The app's sign-in session; POST /devices/unregister-session removes its devices",
+  })
+  @IsOptional()
+  @IsUUID()
+  sessionId?: string;
 }
 
 export class UnregisterDeviceDto {
@@ -27,4 +36,10 @@ export class UnregisterDeviceDto {
   @IsString()
   @MinLength(10)
   token: string;
+}
+
+export class UnregisterSessionDto {
+  @ApiProperty({ format: 'uuid' })
+  @IsUUID()
+  sessionId: string;
 }
