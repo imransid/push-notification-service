@@ -7,6 +7,9 @@ export interface RegisterDeviceInput {
   app: string;
   token: string;
   platform: string;
+  // The app's sign-in session (customer-api's sid), so the session's
+  // devices can be removed with it. Absent: null.
+  sessionId?: string;
 }
 
 @Injectable()
@@ -34,6 +37,16 @@ export class PostgresDeviceRepository implements OnModuleInit, OnModuleDestroy {
       `CREATE INDEX IF NOT EXISTS devices_user_status_idx
          ON devices (user_id, status)`,
     );
+    // Added later, so ALTER and not in the CREATE above: tables made
+    // before it get the column too. Nullable: a device registered
+    // without a session has none.
+    await this.pool.query(
+      `ALTER TABLE devices ADD COLUMN IF NOT EXISTS session_id UUID`,
+    );
+    await this.pool.query(
+      `CREATE INDEX IF NOT EXISTS devices_session_idx
+         ON devices (session_id) WHERE session_id IS NOT NULL`,
+    );
   }
 
   async onModuleDestroy() {
@@ -42,18 +55,20 @@ export class PostgresDeviceRepository implements OnModuleInit, OnModuleDestroy {
 
   // Same token again = update the row, never a duplicate.
   // If the token now belongs to a different user (logout, then another
-  // login on the same phone), it moves to the new user.
+  // login on the same phone), it moves to the new user. It takes the
+  // session of the registration that sent it last, or none.
   async upsert(d: RegisterDeviceInput): Promise<void> {
     await this.pool.query(
-      `INSERT INTO devices (id, user_id, app, token, platform)
-       VALUES ($1, $2, $3, $4, $5)
+      `INSERT INTO devices (id, user_id, app, token, platform, session_id)
+       VALUES ($1, $2, $3, $4, $5, $6)
        ON CONFLICT (token) DO UPDATE
          SET user_id = EXCLUDED.user_id,
              app = EXCLUDED.app,
              platform = EXCLUDED.platform,
+             session_id = EXCLUDED.session_id,
              status = 'active',
              last_seen_at = now()`,
-      [randomUUID(), d.userId, d.app, d.token, d.platform],
+      [randomUUID(), d.userId, d.app, d.token, d.platform, d.sessionId ?? null],
     );
   }
 
@@ -78,5 +93,14 @@ export class PostgresDeviceRepository implements OnModuleInit, OnModuleDestroy {
       [token],
     );
     return (rowCount ?? 0) > 0;
+  }
+
+  // Every device registered under this session: the app signed it out.
+  async removeSession(sessionId: string): Promise<number> {
+    const { rowCount } = await this.pool.query(
+      'DELETE FROM devices WHERE session_id = $1',
+      [sessionId],
+    );
+    return rowCount ?? 0;
   }
 }

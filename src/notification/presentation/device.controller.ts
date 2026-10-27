@@ -9,7 +9,11 @@ import {
 import { ApiSecurity, ApiTags } from '@nestjs/swagger';
 import { ApiKeyGuard } from './api-key.guard';
 import { PostgresDeviceRepository } from '../infrastructure/postgres-device.repository';
-import { RegisterDeviceDto, UnregisterDeviceDto } from './device.dto';
+import {
+  RegisterDeviceDto,
+  UnregisterDeviceDto,
+  UnregisterSessionDto,
+} from './device.dto';
 
 @ApiTags('devices')
 @ApiSecurity('api-key')
@@ -28,6 +32,15 @@ export class DeviceController {
   @HttpCode(200)
   async unregister(@Body() dto: UnregisterDeviceDto) {
     const removed = await this.devices.remove(dto.token);
+    return { ok: true, removed };
+  }
+
+  // A signed-out session: its devices stop getting notifications. Safe to
+  // call again, and for a session with no device (removed: 0).
+  @Post('unregister-session')
+  @HttpCode(200)
+  async unregisterSession(@Body() dto: UnregisterSessionDto) {
+    const removed = await this.devices.removeSession(dto.sessionId);
     return { ok: true, removed };
   }
 }
