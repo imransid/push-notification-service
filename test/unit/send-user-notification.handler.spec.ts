@@ -14,7 +14,7 @@ const setup = (opts: { inserted: boolean; pendingId: string | null }) => {
       async (
         _name: string,
         _data: { id: string },
-        _opts: { jobId: string },
+        _opts: { jobId: string } & Record<string, unknown>,
       ) => ({}),
     ),
   };
@@ -45,6 +45,10 @@ describe('SendUserNotificationHandler', () => {
     const [, data, opts] = queue.add.mock.calls[0];
     expect(opts.jobId).toBe(data.id);
     expect(result.queued).toBe(1);
+    // Done and failed jobs leave Redis (Postgres keeps the record).
+    expect(opts.removeOnComplete).toEqual({ age: 3600, count: 1000 });
+    expect(opts.removeOnFail).toEqual({ age: 604800 });
+    expect(opts.attempts).toBe(3);
   });
 
   it('queues again when the old notification is still pending', async () => {

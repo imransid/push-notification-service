@@ -11,6 +11,7 @@ import {
   type NotificationRepository,
 } from '../../domain/notification.repository';
 import { PostgresDeviceRepository } from '../../infrastructure/postgres-device.repository';
+import { PUSH_JOB_OPTIONS } from '../job-options';
 
 @CommandHandler(SendUserNotificationCommand)
 export class SendUserNotificationHandler implements ICommandHandler<
@@ -68,10 +69,6 @@ export class SendUserNotificationHandler implements ICommandHandler<
   }
 
   private enqueue(id: string) {
-    return this.queue.add(
-      'send',
-      { id },
-      { jobId: id, attempts: 3, backoff: { type: 'exponential', delay: 1000 } },
-    );
+    return this.queue.add('send', { id }, { jobId: id, ...PUSH_JOB_OPTIONS });
   }
 }

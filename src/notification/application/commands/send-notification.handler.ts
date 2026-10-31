@@ -10,6 +10,7 @@ import {
   NOTIFICATION_REPOSITORY,
   type NotificationRepository,
 } from '../../domain/notification.repository';
+import { PUSH_JOB_OPTIONS } from '../job-options';
 
 @CommandHandler(SendNotificationCommand)
 export class SendNotificationHandler implements ICommandHandler<
@@ -33,11 +34,7 @@ export class SendNotificationHandler implements ICommandHandler<
 
     await this.repo.save(notification);
     notification.commit();
-    await this.queue.add(
-      'send',
-      { id: notification.id },
-      { attempts: 3, backoff: { type: 'exponential', delay: 1000 } },
-    );
+    await this.queue.add('send', { id: notification.id }, PUSH_JOB_OPTIONS);
     return notification.id;
   }
 }
