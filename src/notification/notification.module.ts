@@ -25,6 +25,11 @@ import { SendUserNotificationHandler } from './application/commands/send-user-no
       connection: {
         host: process.env.REDIS_HOST ?? '127.0.0.1',
         port: Number(process.env.REDIS_PORT ?? 6381),
+        // Optional: set REDIS_PASSWORD here and `requirepass` on Redis
+        // together (docs/QUEUE_TIDY.md). Unset, no password, as before.
+        ...(process.env.REDIS_PASSWORD
+          ? { password: process.env.REDIS_PASSWORD }
+          : {}),
       },
     }),
     BullModule.registerQueue({ name: 'notifications' }),
